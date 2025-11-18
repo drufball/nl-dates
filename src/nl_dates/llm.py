@@ -84,35 +84,4 @@ Examples:
             ) from e
 
 
-# Global default client instance
-_default_client: LLMClient | None = None
-
-
-def get_default_client() -> LLMClient:
-    """
-    Get or create the default LLM client instance.
-
-    Returns:
-        The default LLMClient instance
-
-    Raises:
-        ValueError: If API key is not configured
-    """
-    global _default_client
-    if _default_client is None:
-        _default_client = LLMClient()
-    return _default_client
-
-
-def set_default_client(client: LLMClient | None) -> None:
-    """
-    Set the default LLM client instance.
-
-    This is useful for testing to inject a mock client.
-
-    Args:
-        client: LLM client to use as default, or None to reset
-    """
-    global _default_client
-    _default_client = client
 

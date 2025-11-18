@@ -2,10 +2,14 @@
 
 from datetime import date, datetime
 
-from nl_dates.llm import get_default_client
+from nl_dates.llm import LLMClient
 
 
-def calculate_date(date_string: str, relative_to_date: date | None = None) -> date:
+def calculate_date(
+    date_string: str,
+    relative_to_date: date | None = None,
+    client: LLMClient | None = None,
+) -> date:
     """
     Convert a natural language date string to a date object using OpenAI.
 
@@ -14,6 +18,9 @@ def calculate_date(date_string: str, relative_to_date: date | None = None) -> da
             (e.g., "tomorrow", "next Tuesday")
         relative_to_date: Optional date to use as reference.
             Defaults to current date.
+        client: Optional LLM client to use for parsing. If None,
+            a new client will be created using the OPENAI_API_KEY
+            environment variable.
 
     Returns:
         date object representing the parsed date
@@ -30,8 +37,11 @@ def calculate_date(date_string: str, relative_to_date: date | None = None) -> da
     if relative_to_date is None:
         relative_to_date = datetime.now().date()
 
-    # Get the LLM client and parse the date
-    client = get_default_client()
+    # Create client if not provided (dependency injection)
+    if client is None:
+        client = LLMClient()
+
+    # Parse the date using the LLM client
     response_text = client.parse_date(date_string, relative_to_date)
 
     try:
