@@ -1,0 +1,11 @@
+{
+  "name": "my-project",
+  "dependencies": {
+    "tessleng/python": {
+      "version": "0.0.2"
+    },
+    "tessl/pypi-pytest": {
+      "version": "8.4.0"
+    }
+  }
+}
