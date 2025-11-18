@@ -33,9 +33,7 @@ class LLMClient:
             )
         self.client = OpenAI(api_key=api_key)
 
-    def parse_date(
-        self, date_string: str, relative_to_date: date
-    ) -> str:
+    def parse_date(self, date_string: str, relative_to_date: date) -> str:
         """
         Parse a natural language date string to ISO 8601 format using LLM.
 
@@ -82,6 +80,3 @@ Examples:
             raise ValueError(
                 f"Failed to parse date string '{date_string}': {e!s}"
             ) from e
-
-
-

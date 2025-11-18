@@ -55,9 +55,7 @@ def test_calculate_date_returns_date(mock_llm_client: MagicMock) -> None:
     # Mock the LLM to return the same date
     mock_llm_client.parse_date.return_value = "2025-01-01"
 
-    result = calculate_date(
-        "today", relative_to_date=test_date, client=mock_llm_client
-    )
+    result = calculate_date("today", relative_to_date=test_date, client=mock_llm_client)
 
     # Should return a date object
     assert isinstance(result, date)
@@ -72,9 +70,7 @@ def test_calculate_date_invalid_llm_response(mock_llm_client: MagicMock) -> None
     mock_llm_client.parse_date.return_value = "not-a-date"
 
     with pytest.raises(ValueError, match="LLM returned invalid ISO date"):
-        calculate_date(
-            "tomorrow", relative_to_date=test_date, client=mock_llm_client
-        )
+        calculate_date("tomorrow", relative_to_date=test_date, client=mock_llm_client)
 
 
 def test_calculate_date_llm_error(mock_llm_client: MagicMock) -> None:
@@ -85,6 +81,4 @@ def test_calculate_date_llm_error(mock_llm_client: MagicMock) -> None:
     mock_llm_client.parse_date.side_effect = ValueError("LLM API error")
 
     with pytest.raises(ValueError, match="LLM API error"):
-        calculate_date(
-            "tomorrow", relative_to_date=test_date, client=mock_llm_client
-        )
+        calculate_date("tomorrow", relative_to_date=test_date, client=mock_llm_client)
