@@ -1,13 +1,8 @@
 """Natural language date parsing functionality."""
 
-import os
 from datetime import date, datetime
 
-from dotenv import load_dotenv
-from openai import OpenAI
-
-# Load environment variables from .env file
-load_dotenv()
+from nl_dates.llm import get_default_client
 
 
 def calculate_date(date_string: str, relative_to_date: date | None = None) -> date:
@@ -15,8 +10,10 @@ def calculate_date(date_string: str, relative_to_date: date | None = None) -> da
     Convert a natural language date string to a date object using OpenAI.
 
     Args:
-        date_string: Natural language description of a date (e.g., "tomorrow", "next Tuesday")
-        relative_to_date: Optional date to use as reference. Defaults to current date.
+        date_string: Natural language description of a date
+            (e.g., "tomorrow", "next Tuesday")
+        relative_to_date: Optional date to use as reference.
+            Defaults to current date.
 
     Returns:
         date object representing the parsed date
@@ -33,46 +30,16 @@ def calculate_date(date_string: str, relative_to_date: date | None = None) -> da
     if relative_to_date is None:
         relative_to_date = datetime.now().date()
 
-    # Initialize OpenAI client
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        raise ValueError(
-            "OPENAI_API_KEY environment variable must be set to use this function"
-        )
-
-    client = OpenAI(api_key=api_key)
-
-    # Create the prompt for OpenAI
-    prompt = f"""Parse the following natural language date string into an ISO 8601 date format (YYYY-MM-DD).
-
-Natural language date: "{date_string}"
-Reference date (today): {relative_to_date.isoformat()}
-
-Return ONLY the parsed date in ISO 8601 format (YYYY-MM-DD), nothing else. Do not include time.
-
-Examples:
-- "tomorrow" relative to 2025-11-18 → 2025-11-19
-- "next Tuesday" relative to 2025-11-18 → 2025-11-19
-- "today" relative to 2025-01-01 → 2025-01-01
-- "in 3 days" relative to 2025-11-18 → 2025-11-21"""
+    # Get the LLM client and parse the date
+    client = get_default_client()
+    response_text = client.parse_date(date_string, relative_to_date)
 
     try:
-        # Call OpenAI API
-        response = client.chat.completions.create(
-            model="gpt-4",
-            max_tokens=100,
-            messages=[{"role": "user", "content": prompt}],
-        )
-
-        # Extract the response text
-        response_text = response.choices[0].message.content.strip()
-
         # Parse the ISO date string
         parsed_date = date.fromisoformat(response_text)
-
         return parsed_date
-
-    except Exception as e:
+    except ValueError as e:
         raise ValueError(
-            f"Failed to parse date string '{date_string}': {str(e)}"
+            f"Failed to parse date string '{date_string}': "
+            f"LLM returned invalid ISO date '{response_text}'"
         ) from e
