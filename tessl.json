@@ -6,6 +6,12 @@
     },
     "tessl/pypi-pytest": {
       "version": "8.4.0"
+    },
+    "tessl/pypi-anthropic": {
+      "version": "0.66.0"
+    },
+    "tessl/pypi-openai": {
+      "version": "1.106.0"
     }
   }
 }
