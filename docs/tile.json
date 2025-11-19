@@ -1,8 +1,8 @@
 {
     "name": "drufball/nl-dates",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "summary": "A python library for converting natural language strings into dates",
     "private": true,
     "docs": "index.md",
-    "describes": "pkg:github.com/drufball/nl-dates"
+    "describes": "pkg:github.com/drufball/nl-dates@v0.1.0"
 }
