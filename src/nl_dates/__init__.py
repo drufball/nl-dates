@@ -1,5 +1,5 @@
 """Natural language date parsing library."""
 
-from nl_dates.parser import calculate_date
+from nl_dates.parser import extract_date
 
-__all__ = ["calculate_date"]
+__all__ = ["extract_date"]

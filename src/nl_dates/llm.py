@@ -33,40 +33,60 @@ class LLMClient:
             )
         self.client = OpenAI(api_key=api_key)
 
-    def parse_date(self, date_string: str, relative_to_date: date) -> str:
+    def extract_date_from_task(
+        self, task_description: str, relative_to_date: date
+    ) -> tuple[str, str | None]:
         """
-        Parse a natural language date string to ISO 8601 format using LLM.
+        Extract date information from a task description and return cleaned task.
 
         Args:
-            date_string: Natural language description of a date
-                (e.g., "tomorrow", "next Tuesday")
+            task_description: Task description that may contain natural language dates
             relative_to_date: Date to use as reference for relative dates
 
         Returns:
-            ISO 8601 formatted date string (YYYY-MM-DD)
+            Tuple of (cleaned_task_description, iso_date_or_none)
+            - cleaned_task_description: Task with date content removed
+            - iso_date_or_none: ISO 8601 date (YYYY-MM-DD) if found, None otherwise
 
         Raises:
-            ValueError: If the LLM fails to parse the date or returns invalid response
+            ValueError: If the LLM fails to process the request
         """
-        prompt = f"""Parse the following natural language date string into \
-an ISO 8601 date format (YYYY-MM-DD).
+        prompt = f"""Analyze the following task description and extract any date \
+information.
 
-Natural language date: "{date_string}"
+Task description: "{task_description}"
 Reference date (today): {relative_to_date.isoformat()}
 
-Return ONLY the parsed date in ISO 8601 format (YYYY-MM-DD), \
-nothing else. Do not include time.
+Your response must be EXACTLY two lines:
+1. First line: The task description with any date-related content removed
+2. Second line: Either the ISO 8601 date (YYYY-MM-DD) if a date is \
+mentioned, or the word "None" if no date is found
 
 Examples:
-- "tomorrow" relative to 2025-11-18 → 2025-11-19
-- "next Tuesday" relative to 2025-11-18 → 2025-11-19
-- "today" relative to 2025-01-01 → 2025-01-01
-- "in 3 days" relative to 2025-11-18 → 2025-11-21"""
+Input: "Submit report tomorrow"
+Output:
+Submit report
+2025-11-19
+
+Input: "Review code by next Tuesday"
+Output:
+Review code
+2025-11-19
+
+Input: "Fix the authentication bug"
+Output:
+Fix the authentication bug
+None
+
+Input: "Deploy in 3 days"
+Output:
+Deploy
+2025-11-21"""
 
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4",
-                max_tokens=100,
+                max_tokens=150,
                 messages=[{"role": "user", "content": prompt}],
             )
 
@@ -74,9 +94,23 @@ Examples:
             if not response_content:
                 raise ValueError("OpenAI API returned empty response")
 
-            return response_content.strip()
+            lines = response_content.strip().split("\n")
+            if len(lines) < 2:
+                raise ValueError(
+                    f"Expected 2 lines in response, got {len(lines)}: "
+                    f"{response_content}"
+                )
+
+            cleaned_task = lines[0].strip()
+            date_str = lines[1].strip()
+
+            # Return None if the LLM indicated no date was found
+            if date_str.lower() == "none":
+                return (cleaned_task, None)
+
+            return (cleaned_task, date_str)
 
         except Exception as e:
             raise ValueError(
-                f"Failed to parse date string '{date_string}': {e!s}"
+                f"Failed to extract date from task '{task_description}': {e!s}"
             ) from e

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from nl_dates import calculate_date
+from nl_dates import extract_date
 from nl_dates.llm import LLMClient
 
 
@@ -15,70 +15,124 @@ def mock_llm_client() -> MagicMock:
     return MagicMock(spec=LLMClient)
 
 
-def test_calculate_date_with_relative_date(mock_llm_client: MagicMock) -> None:
-    """Test calculate_date with an explicit relative_to_date."""
+def test_extract_date_with_date_in_task(mock_llm_client: MagicMock) -> None:
+    """Test extract_date with a task containing a date."""
     test_date = date(2025, 11, 18)
 
-    # Mock the LLM to return a specific ISO date
-    mock_llm_client.parse_date.return_value = "2025-11-19"
+    # Mock the LLM to return cleaned task and ISO date
+    mock_llm_client.extract_date_from_task.return_value = (
+        "Submit report",
+        "2025-11-19",
+    )
 
-    result = calculate_date(
-        "tomorrow", relative_to_date=test_date, client=mock_llm_client
+    cleaned_task, extracted_date = extract_date(
+        "Submit report tomorrow", relative_to_date=test_date, client=mock_llm_client
     )
 
     # Verify the mock was called with correct arguments
-    mock_llm_client.parse_date.assert_called_once_with("tomorrow", test_date)
+    mock_llm_client.extract_date_from_task.assert_called_once_with(
+        "Submit report tomorrow", test_date
+    )
 
-    # Should return a date object
-    assert isinstance(result, date)
-    assert result == date(2025, 11, 19)
+    # Should return cleaned task and date object
+    assert cleaned_task == "Submit report"
+    assert isinstance(extracted_date, date)
+    assert extracted_date == date(2025, 11, 19)
 
 
-def test_calculate_date_without_relative_date(mock_llm_client: MagicMock) -> None:
-    """Test calculate_date defaults to current date when relative_to_date is None."""
-    # Mock the LLM to return today's date (whatever it is)
-    mock_llm_client.parse_date.return_value = "2025-11-18"
+def test_extract_date_without_date_in_task(mock_llm_client: MagicMock) -> None:
+    """Test extract_date with a task containing no date."""
+    test_date = date(2025, 11, 18)
 
-    result = calculate_date("today", client=mock_llm_client)
+    # Mock the LLM to return cleaned task and None for date
+    mock_llm_client.extract_date_from_task.return_value = (
+        "Fix the authentication bug",
+        None,
+    )
 
-    # Should return a date object
-    assert isinstance(result, date)
+    cleaned_task, extracted_date = extract_date(
+        "Fix the authentication bug",
+        relative_to_date=test_date,
+        client=mock_llm_client,
+    )
+
+    # Verify the mock was called with correct arguments
+    mock_llm_client.extract_date_from_task.assert_called_once_with(
+        "Fix the authentication bug", test_date
+    )
+
+    # Should return cleaned task and None for date
+    assert cleaned_task == "Fix the authentication bug"
+    assert extracted_date is None
+
+
+def test_extract_date_defaults_to_current_date(mock_llm_client: MagicMock) -> None:
+    """Test extract_date defaults to current date when relative_to_date is None."""
+    # Mock the LLM to return a cleaned task and date
+    mock_llm_client.extract_date_from_task.return_value = ("Deploy", "2025-11-21")
+
+    cleaned_task, extracted_date = extract_date(
+        "Deploy in 3 days", client=mock_llm_client
+    )
+
+    # Should return cleaned task and date object
+    assert cleaned_task == "Deploy"
+    assert isinstance(extracted_date, date)
 
     # Verify the mock was called
-    mock_llm_client.parse_date.assert_called_once()
+    mock_llm_client.extract_date_from_task.assert_called_once()
 
 
-def test_calculate_date_returns_date(mock_llm_client: MagicMock) -> None:
-    """Test that calculate_date returns a date object."""
+def test_extract_date_with_complex_task(mock_llm_client: MagicMock) -> None:
+    """Test extract_date with a more complex task description."""
     test_date = date(2025, 1, 1)
 
-    # Mock the LLM to return the same date
-    mock_llm_client.parse_date.return_value = "2025-01-01"
+    # Mock the LLM to return cleaned task and date
+    mock_llm_client.extract_date_from_task.return_value = (
+        "Review code",
+        "2025-01-07",
+    )
 
-    result = calculate_date("today", relative_to_date=test_date, client=mock_llm_client)
+    cleaned_task, extracted_date = extract_date(
+        "Review code by next Tuesday",
+        relative_to_date=test_date,
+        client=mock_llm_client,
+    )
 
-    # Should return a date object
-    assert isinstance(result, date)
-    assert result == test_date
+    # Should return cleaned task and date object
+    assert cleaned_task == "Review code"
+    assert isinstance(extracted_date, date)
+    assert extracted_date == date(2025, 1, 7)
 
 
-def test_calculate_date_invalid_llm_response(mock_llm_client: MagicMock) -> None:
-    """Test that calculate_date handles invalid LLM responses."""
+def test_extract_date_invalid_llm_response(mock_llm_client: MagicMock) -> None:
+    """Test that extract_date handles invalid LLM responses."""
     test_date = date(2025, 11, 18)
 
     # Mock the LLM to return an invalid ISO date
-    mock_llm_client.parse_date.return_value = "not-a-date"
+    mock_llm_client.extract_date_from_task.return_value = (
+        "Submit report",
+        "not-a-date",
+    )
 
     with pytest.raises(ValueError, match="LLM returned invalid ISO date"):
-        calculate_date("tomorrow", relative_to_date=test_date, client=mock_llm_client)
+        extract_date(
+            "Submit report tomorrow",
+            relative_to_date=test_date,
+            client=mock_llm_client,
+        )
 
 
-def test_calculate_date_llm_error(mock_llm_client: MagicMock) -> None:
-    """Test that calculate_date handles LLM errors."""
+def test_extract_date_llm_error(mock_llm_client: MagicMock) -> None:
+    """Test that extract_date handles LLM errors."""
     test_date = date(2025, 11, 18)
 
     # Mock the LLM to raise an error
-    mock_llm_client.parse_date.side_effect = ValueError("LLM API error")
+    mock_llm_client.extract_date_from_task.side_effect = ValueError("LLM API error")
 
     with pytest.raises(ValueError, match="LLM API error"):
-        calculate_date("tomorrow", relative_to_date=test_date, client=mock_llm_client)
+        extract_date(
+            "Submit report tomorrow",
+            relative_to_date=test_date,
+            client=mock_llm_client,
+        )

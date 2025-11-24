@@ -1,7 +1,7 @@
 [project]
 name = "nl-dates"
-version = "0.1.0"
-description = "A library for parsing natural language date strings into ISO datetime format"
+version = "0.2.0"
+description = "A library for extracting dates from task descriptions and returning cleaned tasks"
 readme = "README.md"
 authors = [
     { email = "dru@drufball.com" }

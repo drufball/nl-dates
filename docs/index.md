@@ -1,6 +1,6 @@
 # nl-dates Documentation
 
-Convert natural language date strings into ISO date format using OpenAI's GPT-4.
+Extract dates from task descriptions and return cleaned tasks using OpenAI's GPT-4.
 
 ## Installation
 
@@ -21,42 +21,54 @@ OPENAI_API_KEY=your-api-key-here
 ## Quick Start
 
 ```python
-from nl_dates import calculate_date
+from nl_dates import extract_date
 
-# Basic usage
-calculate_date("tomorrow")  # date(2025, 11, 19)
-calculate_date("next Tuesday")  # date(2025, 11, 19)
-calculate_date("in 3 days")  # date(2025, 11, 21)
+# Extract date from task description
+task, date = extract_date("Submit report tomorrow")
+# task: "Submit report"
+# date: date(2025, 11, 19)
+
+# Task without date returns None
+task, date = extract_date("Fix the authentication bug")
+# task: "Fix the authentication bug"
+# date: None
 
 # With a reference date
 from datetime import date
-calculate_date("next week", relative_to_date=date(2025, 1, 1))
-
-# Convert to ISO format
-calculate_date("tomorrow").isoformat()  # '2025-11-19'
+task, date_obj = extract_date(
+    "Review code by next Tuesday",
+    relative_to_date=date(2025, 1, 1)
+)
+# task: "Review code"
+# date_obj: date(2025, 1, 7)
 ```
 
 ## API Reference
 
-### `calculate_date(date_string, relative_to_date=None, client=None)`
+### `extract_date(task_description, relative_to_date=None, client=None)`
 
-Converts a natural language date string to a `date` object.
+Extracts date information from a task description and returns the cleaned task with the extracted date.
 
 **Parameters:**
-- `date_string` (str): Natural language date like "tomorrow", "next Tuesday", "in 3 days"
+- `task_description` (str): Task description that may contain natural language dates (e.g., "Submit report tomorrow", "Fix bug by next Tuesday")
 - `relative_to_date` (date, optional): Reference date for relative parsing. Defaults to today
 - `client` (LLMClient, optional): Custom LLM client. Defaults to creating one with `OPENAI_API_KEY`
 
-**Returns:** `date` object
+**Returns:** Tuple of `(cleaned_task, extracted_date)`
+- `cleaned_task` (str): Task description with date content removed
+- `extracted_date` (date | None): Extracted date object, or None if no date found
 
-**Raises:** `ValueError` if parsing fails or API key is missing
+**Raises:** `ValueError` if LLM processing fails or API key is missing
 
 ### Supported Date Formats
+
+The library can extract various natural language date formats from task descriptions:
 
 - Relative: "tomorrow", "yesterday", "today"
 - Day of week: "next Monday", "this Friday", "last Tuesday"
 - Relative periods: "in 3 days", "2 weeks ago", "next month"
 - Specific dates: "January 1st", "March 15, 2025"
+- Prepositional phrases: "by Friday", "on Monday", "before next week"
 
 ## Advanced Usage
 
@@ -66,7 +78,8 @@ Converts a natural language date string to a `date` object.
 from nl_dates.llm import LLMClient
 
 client = LLMClient()
-dates = [calculate_date(d, client=client) for d in ["tomorrow", "next week"]]
+tasks = ["Submit report tomorrow", "Review code by Friday", "Fix bug"]
+results = [extract_date(t, client=client) for t in tasks]
 ```
 
 ### Custom API Key
@@ -75,7 +88,20 @@ dates = [calculate_date(d, client=client) for d in ["tomorrow", "next week"]]
 from nl_dates.llm import LLMClient
 
 client = LLMClient(api_key="your-api-key")
-result = calculate_date("tomorrow", client=client)
+task, date = extract_date("Deploy next week", client=client)
+```
+
+### Working with Results
+
+```python
+task, extracted_date = extract_date("Complete project by tomorrow")
+
+# Check if date was found
+if extracted_date:
+    print(f"Task: {task}")
+    print(f"Due: {extracted_date.isoformat()}")
+else:
+    print(f"No deadline: {task}")
 ```
 
 ## Requirements
