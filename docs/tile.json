@@ -1,6 +1,6 @@
 {
     "name": "drufball/nl-dates",
-    "version": "0.1.0",
+    "version": "0.0.4",
     "summary": "A python library for extracting dates from task descriptions and returning cleaned tasks",
     "private": true,
     "docs": "index.md",
